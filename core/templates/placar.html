@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Contato{{ super() }}{% endblock %}
+{% block content %}
+<main class="px-3">
+    <h1>Placar</h1>
+    {% if entries %}
+    <table class="table table-dark table-borderless">
+        <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Nickname</th>
+              <th scope="col">Score</th>
+              <th scope="col">Seconds</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for entry in entries %}
+        <tr>
+              <th scope="row"></th>
+              <td>{{entry.nickname}}</td>
+              <td>{{entry.score}}</td>
+              <td>{{entry.seconds}}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</main>
+{% endblock %}
