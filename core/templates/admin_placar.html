@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Gerenciar Placar - {{ super() }}{% endblock %}
+
+{% block content %}
+<main class="px-3">
+    <h1 class="mb-4">Gerenciar Leaderboard</h1>
+
+    <div class="card border-light text-start mx-auto mb-5" style="max-width: 500px;">
+        <div class="card-body">
+            <h5 id="form-title" class="card-title border-bottom pb-2 mb-3">Adicionar Nova Pontuação</h5>
+            
+            <form id="leaderboard-form" onsubmit="handleFormSubmit(event)">
+                <input type="hidden" id="entry-id" name="id">
+
+                <div class="mb-3">
+                    <label class="form-label">Nickname</label>
+                    <input type="text" id="entry-nickname" name="nickname" class="form-control bg-transparent" placeholder="Ex: Paulo" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Pontuação</label>
+                        <input type="number" id="entry-score" name="score" class="form-control bg-transparent" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Tempo (s)</label>
+                        <input type="number" id="entry-seconds" name="seconds" class="form-control bg-transparent" value="0">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Comentário</label>
+                    <textarea id="entry-text" name="text" class="form-control bg-transparent" rows="2"></textarea>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="button" id="btn-cancel" class="btn btn-outline-secondary w-50 d-none" onclick="clearForm()">Cancelar</button>
+                    <button type="submit" id="btn-submit" class="btn btn-light fw-bold w-100">Salvar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <hr class="my-5">
+
+    <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Nickname</th>
+                    <th scope="col">Score</th>
+                    <th scope="col">Data</th>
+                    <th scope="col">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <th scope="row">{{ entry.id }}</th>
+                    <td>{{ entry.nickname }}</td>
+                    <td>{{ entry.score }}</td>
+                    <td class="small opacity-50">{{ entry.updated_at | data_local }}</td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <button onclick="startEdit(`{{ entry.id }}`, `{{ entry.nickname }}`, `{{ entry.score }}`, `{{ entry.seconds }}`, `{{ entry.text }}`)" class="btn btn-outline-warning btn-sm">
+                                Editar
+                            </button>
+                            <button onclick="deleteEntry(`{{ entry.id }}`)" class="btn btn-outline-danger btn-sm">
+                                Remover
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // 1. Função que intercepta o envio do formulário
+        async function handleFormSubmit(event) {
+            event.preventDefault(); // Impede o recarregamento padrão da página
+
+            const id = document.getElementById('entry-id').value;
+            const nickname = document.getElementById('entry-nickname').value;
+            const score = document.getElementById('entry-score').value;
+            const seconds = document.getElementById('entry-seconds').value;
+            const text = document.getElementById('entry-text').value;
+
+            const payload = { nickname, score, seconds, text };
+            
+            let url = '/api/leaderboard';
+            let method = 'POST';
+
+            // Se o ID estiver preenchido, muda a estratégia para PUT (Update)
+            if (id) {
+                url = `/api/leaderboard/${id}`;
+                method = 'PUT';
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    const errData = await response.json();
+                    alert(`Erro ao salvar: ${errData.error || 'Erro desconhecido'}`);
+                }
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+            }
+        }
+
+        // 2. Coloca o formulário em modo de Edição e rola a tela para cima
+        function startEdit(id, nickname, score, seconds, text) {
+            document.getElementById('entry-id').value = id;
+            document.getElementById('entry-nickname').value = nickname;
+            document.getElementById('entry-score').value = score;
+            document.getElementById('entry-seconds').value = seconds;
+            document.getElementById('entry-text').value = text;
+
+            // Altera elementos visuais para indicar o modo de edição
+            document.getElementById('form-title').innerText = "Editar Pontuação #" + id;
+            
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.innerText = "Atualizar Registro";
+            btnSubmit.classList.replace('btn-light', 'btn-warning');
+            btnSubmit.classList.replace('w-100', 'w-50');
+
+            document.getElementById('btn-cancel').classList.remove('d-none');
+
+            // Rola a tela suavemente de volta para o formulário
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 3. Limpa o formulário e volta ele para o estado de Criação (POST)
+        function clearForm() {
+            document.getElementById('leaderboard-form').reset();
+            document.getElementById('entry-id').value = "";
+
+            document.getElementById('form-title').innerText = "Adicionar Nova Pontuação";
+            
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.innerText = "Salvar Registro";
+            btnSubmit.classList.replace('btn-warning', 'btn-light');
+            btnSubmit.classList.replace('w-50', 'w-100');
+
+            document.getElementById('btn-cancel').classList.add('d-none');
+        }
+
+        async function deleteEntry(id) {
+            if(confirm('Deseja realmente excluir este registro permanentemente?')) {
+                try {
+                    const response = await fetch(`/api/leaderboard/${id}`, { 
+                        method: 'DELETE' 
+                    });
+                    
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Erro ao excluir o registro.');
+                    }
+                } catch (error) {
+                    console.error('Erro:', error);
+                }
+            }
+        }
+    </script>
+</main>
+{% endblock %}

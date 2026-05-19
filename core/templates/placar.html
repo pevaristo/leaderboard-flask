@@ -11,6 +11,8 @@
               <th scope="col">Nickname</th>
               <th scope="col">Score</th>
               <th scope="col">Seconds</th>
+              <th scope="col">Criado em</th>
+              <th scope="col">Atualizado em</th>
             </tr>
         </thead>
         <tbody>
@@ -20,6 +22,8 @@
               <td>{{entry.nickname}}</td>
               <td>{{entry.score}}</td>
               <td>{{entry.seconds}}</td>
+              <td>{{entry.created_at}}</td>
+              <td>{{entry.updated_at}}</td>
         </tr>
         {% endfor %}
         </tbody>
